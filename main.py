@@ -2,8 +2,11 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, date
 import numpy as np
+import joblib
+from sklearn.preprocessing import StandardScaler
+import warnings
+warnings.filterwarnings('ignore')
 
-# Konfigurasi halaman
 st.set_page_config(
     page_title="Klasifikasi Status Gizi",
     page_icon="⚕️",
@@ -11,7 +14,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS untuk styling
 st.markdown("""
 <style>
     .main-header {
@@ -46,6 +48,7 @@ st.markdown("""
         border: 3px solid #6366f1;
         text-align: center;
         box-shadow: 0 15px 35px rgba(99, 102, 241, 0.2);
+        color: white;
     }
     
     .normal-status {
@@ -79,6 +82,7 @@ st.markdown("""
         margin-top: 6.25rem;
         border: none;
         box-shadow: 0 5px 15px rgba(168, 237, 234, 0.3);
+        color: white;
     }
     
     .metric-card {
@@ -89,6 +93,15 @@ st.markdown("""
         text-align: center;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     }
+    
+    .prediction-confidence {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+        color: white;
+        text-align: center;
+    }
             
     @media (max-width: 480px), (max-width: 640px) {
     .info-section {
@@ -98,6 +111,25 @@ st.markdown("""
 
 </style>
 """, unsafe_allow_html=True)
+
+@st.cache_resource
+def load_model_and_scaler():
+    """Load model KNN dan scaler yang sudah dilatih"""
+    try:
+        with open('knn_model.pkl', 'rb') as file:
+            model = joblib.load(file)
+        
+        try:
+            with open('scaler.pkl', 'rb') as file:
+                scaler = joblib.load(file)
+        except FileNotFoundError:
+            st.warning("Scaler tidak ditemukan. Menggunakan scaler default.")
+            scaler = StandardScaler()
+        
+        return model, scaler
+    except FileNotFoundError:
+        st.error("Model knn_model.pkl tidak ditemukan. Pastikan file model ada di direktori yang sama.")
+        return None, None
 
 def calculate_age_months(birth_date, measure_date):
     """Menghitung umur dalam bulan"""
@@ -116,217 +148,320 @@ def calculate_bmi(weight, height):
     bmi = weight / (height_m ** 2)
     return round(bmi, 1)
 
-def classify_nutrition_status_zscore(age_months):
-    """Klasifikasi berdasarkan Z-Score untuk usia 5-14 tahun"""
-    if 60 <= age_months <= 168:  # 5-14 tahun
-        return "z_score"
-    else:
-        return None
+def calculate_baz(bmi, age_months, gender):
+    """
+    Menghitung BAZ (BMI-for-Age Z-score)
+    Ini adalah implementasi sederhana - dalam praktik nyata perlu data referensi WHO
+    """
+    if gender == "Laki-laki":
+        if age_months <= 120:  # 0-10 tahun
+            mean_bmi = 15.5 + (age_months * 0.02)
+            sd_bmi = 1.2
+        else:  # 10+ tahun
+            mean_bmi = 17.0 + ((age_months - 120) * 0.03)
+            sd_bmi = 1.5
+    else:  # Perempuan
+        if age_months <= 120:  # 0-10 tahun
+            mean_bmi = 15.0 + (age_months * 0.025)
+            sd_bmi = 1.1
+        else:  # 10+ tahun
+            mean_bmi = 16.5 + ((age_months - 120) * 0.035)
+            sd_bmi = 1.4
+    
+    baz = (bmi - mean_bmi) / sd_bmi
+    return round(baz, 2)
 
-def classify_nutrition_status_bmi(age_months):
-    """Klasifikasi berdasarkan IMT untuk usia 15 tahun ke atas"""
-    if age_months >= 180:  # 15 tahun ke atas
-        return "bmi"
-    else:
-        return None
+def prepare_features(jk, tb, bb, age_months, age_years, bmi, baz):
+    """Menyiapkan fitur untuk prediksi model"""
+    gender_encoded = 1 if jk == "Laki-laki" else 0
+    features = np.array([[gender_encoded, tb, bb, age_months, age_years, bmi, baz]])
+    
+    return features
 
-def get_bmi_classification(bmi):
-    """Klasifikasi berdasarkan IMT"""
-    if bmi < 18.5:
-        return "Kurus", "underweight-status"
-    elif 18.5 <= bmi < 24.9:
-        return "Normal", "normal-status"
-    elif 25.0 <= bmi < 27.0:
-        return "Berat Badan Lebih", "overweight-status"
-    else:
-        return "Obesitas", "obesity-status"
+def get_status_class(prediction):
+    """Mendapatkan class CSS berdasarkan prediksi"""
+    status_mapping = {
+        "Normal": "normal-status",
+        "Kurus": "underweight-status", 
+        "Berat Badan Lebih": "overweight-status",
+        "Obesitas": "obesity-status"
+    }
+    return status_mapping.get(prediction, "result-card")
 
-# Header utama
 st.markdown("""
 <div class="main-header">
-    <h1>Aplikasi Klasifikasi Status Gizi</h1>
-    <p>Sistem Penilaian Status Gizi Berdasarkan Z-Score dan IMT</p>
+    <h1>Aplikasi Klasifikasi Status Gizi dengan AI</h1>
+    <p>Sistem Prediksi Status Gizi Menggunakan Machine Learning (KNN)</p>
 </div>
 """, unsafe_allow_html=True)
 
-# Sidebar untuk input
+model, scaler = load_model_and_scaler()
+
 st.sidebar.header("Input Data Pengukuran")
 
 with st.sidebar:
-    # Input data
     jk = st.selectbox("Jenis Kelamin", ["Laki-laki", "Perempuan"])
     bb = st.number_input("Berat Badan (kg)", min_value=1.0, max_value=200.0, value=50.0, step=0.1)
     tb = st.number_input("Tinggi Badan (cm)", min_value=50.0, max_value=250.0, value=160.0, step=0.1)
     tgl_lahir = st.date_input("Tanggal Lahir", value=date(2010, 1, 1))
     tgl_ukur = st.date_input("Tanggal Ukur", value=date.today())
     
+    st.markdown("---")
+    
+    use_ai_prediction = st.checkbox("Gunakan Prediksi AI (Model KNN)", value=True)
+    
     submit_button = st.button("Analisis Status Gizi", type="primary")
 
-# Konten utama
 col1, col2 = st.columns([2, 1])
 
 with col1:
-    # Informasi Klasifikasi
     st.header("Informasi Klasifikasi Status Gizi")
     
-    # Klasifikasi Z-Score
     st.markdown("""
     <div class="classification-card">
         <h3>Klasifikasi Z-Score (Usia 5-14 Tahun)</h3>
         <table style="width:100%; border-collapse: collapse;">
-            <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Klasifikasi</th>
-                <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Z-Score</th>
+            <tr style="background: rgba(255,255,255,0.2); color: white;">
+                <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">Klasifikasi</th>
+                <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">Z-Score</th>
             </tr>
-            <tr>
-                <td style="border: 1px solid #ddd; padding: 10px;">Kurus</td>
-                <td style="border: 1px solid #ddd; padding: 10px;">-3 SD sd < -2 SD</td>
+            <tr style="color: white;">
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Kurus</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">-3 SD sd < -2 SD</td>
             </tr>
-            <tr>
-                <td style="border: 1px solid #ddd; padding: 10px;">Normal</td>
-                <td style="border: 1px solid #ddd; padding: 10px;">-2 SD sd +1 SD</td>
+            <tr style="color: white;">
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Normal</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">-2 SD sd +1 SD</td>
             </tr>
-            <tr>
-                <td style="border: 1px solid #ddd; padding: 10px;">Berat Badan Lebih</td>
-                <td style="border: 1px solid #ddd; padding: 10px;">+1 SD sd +2 SD</td>
+            <tr style="color: white;">
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Berat Badan Lebih</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">+1 SD sd +2 SD</td>
             </tr>
-            <tr>
-                <td style="border: 1px solid #ddd; padding: 10px;">Obesitas</td>
-                <td style="border: 1px solid #ddd; padding: 10px;">> +2 SD</td>
+            <tr style="color: white;">
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Obesitas</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">> +2 SD</td>
             </tr>
         </table>
     </div>
     """, unsafe_allow_html=True)
     
-    # Klasifikasi IMT
     st.markdown("""
     <div class="classification-card">
         <h3>Klasifikasi IMT (Usia 15 Tahun ke Atas)</h3>
         <table style="width:100%; border-collapse: collapse;">
-            <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Klasifikasi</th>
-                <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">IMT</th>
+            <tr style="background: rgba(255,255,255,0.2); color: white;">
+                <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">Klasifikasi</th>
+                <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">IMT</th>
             </tr>
-            <tr>
-                <td style="border: 1px solid #ddd; padding: 10px;">Kurus</td>
-                <td style="border: 1px solid #ddd; padding: 10px;">< 18,5</td>
+            <tr style="color: white;">
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Kurus</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">< 18,5</td>
             </tr>
-            <tr>
-                <td style="border: 1px solid #ddd; padding: 10px;">Normal</td>
-                <td style="border: 1px solid #ddd; padding: 10px;">≥ 18,5 - < 24,9</td>
+            <tr style="color: white;">
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Normal</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 18,5 - < 24,9</td>
             </tr>
-            <tr>
-                <td style="border: 1px solid #ddd; padding: 10px;">Berat Badan Lebih</td>
-                <td style="border: 1px solid #ddd; padding: 10px;">≥ 25,0 - < 27,0</td>
+            <tr style="color: white;">
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Berat Badan Lebih</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 25,0 - < 27,0</td>
             </tr>
-            <tr>
-                <td style="border: 1px solid #ddd; padding: 10px;">Obesitas</td>
-                <td style="border: 1px solid #ddd; padding: 10px;">≥ 27,0</td>
+            <tr style="color: white;">
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Obesitas</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 27,0</td>
             </tr>
         </table>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
-    # Info tambahan
     st.markdown("""
     <div class="info-section">
-        <h4>Informasi Penting</h4>
+        <h4>Model AI Information</h4>
         <ul>
-            <li><strong>Z-Score:</strong> Digunakan untuk anak usia 5-14 tahun</li>
-            <li><strong>IMT:</strong> Digunakan untuk remaja dan dewasa usia 15+ tahun</li>
+            <li><strong>Model:</strong> K-Nearest Neighbors (KNN)</li>
+            <li><strong>Fitur:</strong> 7 parameter antropometri</li>
+            <li><strong>Preprocessing:</strong> StandardScaler normalization</li>
+            <li><strong>Target:</strong> 4 kategori status gizi</li>
+        </ul>
+        <br>
+        <h4>Informasi Klasifikasi</h4>
+        <ul>
+            <li><strong>Z-Score:</strong> Usia 5-14 tahun</li>
+            <li><strong>IMT:</strong> Usia 15+ tahun</li>
+            <li><strong>BAZ:</strong> BMI-for-Age Z-score</li>
             <li><strong>SD:</strong> Standard Deviasi</li>
-            <li><strong>IMT:</strong> Indeks Massa Tubuh (BMI)</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
 
-# Hasil analisis
 if submit_button:
-    # Validasi tanggal
     if tgl_lahir >= tgl_ukur:
         st.error("Tanggal lahir tidak boleh sama dengan atau setelah tanggal ukur!")
     else:
-        # Hitung umur dalam bulan
+        # Hitung parameter dasar
         age_months = calculate_age_months(tgl_lahir, tgl_ukur)
-        age_years = age_months / 12
-        
-        # Hitung IMT
+        age_years = round(age_months / 12, 1)
         bmi = calculate_bmi(bb, tb)
+        baz = calculate_baz(bmi, age_months, jk)
         
-        # Tentukan metode klasifikasi
-        classification_method = None
-        if 60 <= age_months <= 168:  # 5-14 tahun
-            classification_method = "z_score"
-        elif age_months >= 180:  # 15 tahun ke atas
-            classification_method = "bmi"
-        
-        # Tampilkan hasil
         st.header("Hasil Analisis")
         
-        # Data dasar
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
             st.metric("Jenis Kelamin", jk)
         with col2:
-            st.metric("Umur", f"{age_years:.1f} tahun")
+            st.metric("Umur", f"{age_years} tahun")
         with col3:
             st.metric("Berat Badan", f"{bb} kg")
         with col4:
             st.metric("Tinggi Badan", f"{tb} cm")
-        
-        st.metric("IMT/BMI", f"{bmi}")
-        
-        # Hasil klasifikasi
-        if classification_method == "bmi":
-            status, status_class = get_bmi_classification(bmi)
-            method_name = "IMT (Indeks Massa Tubuh)"
-            
-            st.markdown(f"""
-            <div class="result-card {status_class}">
-                <h3>Hasil Klasifikasi</h3>
-                <h2>{status}</h2>
-                <p><strong>Metode:</strong> {method_name}</p>
-                <p><strong>IMT:</strong> {bmi}</p>
-                <p><strong>Kategori Usia:</strong> 15 tahun ke atas</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        elif classification_method == "z_score":
-            st.markdown(f"""
-            <div class="result-card">
-                <h3>Hasil Klasifikasi</h3>
-                <h2>Memerlukan Data Referensi Z-Score</h2>
-                <p><strong>Metode:</strong> Z-Score</p>
-                <p><strong>IMT:</strong> {bmi}</p>
-                <p><strong>Kategori Usia:</strong> 5-14 tahun</p>
-                <p><em>Untuk klasifikasi akurat pada usia ini, diperlukan data referensi Z-Score WHO/nasional</em></p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        else:
-            st.markdown(f"""
-            <div class="result-card overweight-status">
-                <h3>Peringatan</h3>
-                <h2>Usia di Luar Rentang Klasifikasi</h2>
-                <p><strong>Umur saat ini:</strong> {age_years:.1f} tahun</p>
-                <p><strong>IMT:</strong> {bmi}</p>
-                <p><em>Sistem ini hanya dapat mengklasifikasi untuk usia 5 tahun ke atas</em></p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Rekomendasi
-        st.markdown("""
-        <div class="info-section">
-            <h4>Rekomendasi</h4>
-            <p>Konsultasikan hasil ini dengan tenaga kesehatan profesional untuk mendapatkan saran yang tepat mengenai status gizi dan kesehatan.</p>
-        </div>
-        """, unsafe_allow_html=True)
 
-# Footer
+        if age_years > 15:
+            with col5:
+                st.metric("BMI", f"{bmi}")
+        else :
+            st.metric("BAZ (BMI-for-Age Z-score)", f"{baz}")
+        
+        if use_ai_prediction and model is not None and scaler is not None:
+            try:
+                features = prepare_features(jk, tb, bb, age_months, age_years, bmi, baz)
+                
+                features_scaled = scaler.transform(features)
+
+                prediction = model.predict(features_scaled)[0]
+                
+                try:
+                    prediction_proba = model.predict_proba(features_scaled)[0]
+                    confidence = max(prediction_proba) * 100
+                except:
+                    confidence = None
+                
+                status_class = get_status_class(prediction)
+
+                label = ['Berat Badan Lebih', 'Di luar kategori tabel', 'Kurus', 'Normal', 'Obesitas']
+
+                if age_years > 15:
+                    result_card = f"BMI:</strong> {bmi}"
+                else:
+                    result_card = f"<strong>BAZ:</strong> {baz}"
+                
+                st.markdown(f"""
+                <div class="result-card {status_class}">
+                    <h3>Hasil Prediksi AI</h3>
+                    <h2>{label[prediction]}</h2>
+                    <p><strong>Metode:</strong> Machine Learning (KNN)</p>
+                    <p><strong>{result_card}</p>
+                    <p><strong>Umur:</strong> {age_years} tahun ({age_months} bulan)</p>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if confidence is not None:
+                    st.markdown(f"""
+                    <div class="prediction-confidence">
+                        <h4>Confidence Score</h4>
+                        <h3>{confidence:.1f}%</h3>
+                        <p>Tingkat kepercayaan model terhadap prediksi ini</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with st.expander("🔍 Detail Fitur yang Digunakan Model"):
+                    gender_display = "1 (Laki-laki)" if jk == "Laki-laki" else "0 (Perempuan)"
+                    
+                    feature_df = pd.DataFrame({
+                        'Fitur': ['Jenis Kelamin', 'Tinggi Badan', 'Berat Badan', 'Umur Bulan', 'Umur Tahun', 'BMI', 'BAZ'],
+                        'Nilai Asli': [
+                            gender_display,
+                            f"{tb} cm",
+                            f"{bb} kg", 
+                            f"{age_months} bulan",
+                            f"{age_years} tahun",
+                            f"{bmi}",
+                            f"{baz}"
+                        ],
+                        'Nilai Normalized': [
+                            f"{features_scaled[0][0]:.3f}",
+                            f"{features_scaled[0][1]:.3f}",
+                            f"{features_scaled[0][2]:.3f}",
+                            f"{features_scaled[0][3]:.3f}",
+                            f"{features_scaled[0][4]:.3f}",
+                            f"{features_scaled[0][5]:.3f}",
+                            f"{features_scaled[0][6]:.3f}"
+                        ]
+                    })
+                    st.dataframe(feature_df, use_container_width=True)
+                
+            except Exception as e:
+                st.error(f"Error dalam prediksi AI: {str(e)}")
+                st.info("Menggunakan klasifikasi manual sebagai fallback.")
+                use_ai_prediction = False
+
+        if age_years > 15:
+            st.markdown("### Interpretasi IMT")
+
+            if bmi < 18.5:
+                bmi_interpretation = "Kurus ( < 18,5 )"
+                bmi_class = "underweight-status"
+            elif 18.5 <= bmi < 25:
+                bmi_interpretation = "Normal ( ≥ 18,5 - < 25,0 )"
+                bmi_class = "normal-status"
+            elif 25 <= bmi < 27:
+                bmi_interpretation = "Berat Badan Lebih ( ≥ 25,0 - < 27,0 )"
+                bmi_class = "overweight-status"
+            else:
+                bmi_interpretation = "Obesitas ( ≥ 27,0 )"
+                bmi_class = "obesity-status"
+
+            st.markdown(f"""
+            <div style="padding: 1rem; border-radius: 10px; margin: 1rem 0;" class="{bmi_class}">
+                <strong>Interpretasi IMT/BMI:</strong> {bmi_interpretation}
+            </div>
+            """, unsafe_allow_html=True)
+
+        else:
+            st.markdown("### Interpretasi BAZ (BMI-for-Age Z-score)")
+            if baz < -2:
+                baz_interpretation = "Kurus (BAZ < -2 SD)"
+                baz_class = "underweight-status"
+            elif -2 <= baz <= 1:
+                baz_interpretation = "Normal (-2 SD ≤ BAZ ≤ +1 SD)"
+                baz_class = "normal-status"
+            elif 1 < baz <= 2:
+                baz_interpretation = "Berat Badan Lebih (+1 SD < BAZ ≤ +2 SD)"
+                baz_class = "overweight-status"
+            else:
+                baz_interpretation = "Obesitas (BAZ > +2 SD)"
+                baz_class = "obesity-status"
+        
+            st.markdown(f"""
+            <div style="padding: 1rem; border-radius: 10px; margin: 1rem 0;" class="{baz_class}">
+                <strong>Interpretasi BAZ:</strong> {baz_interpretation}
+            </div>
+            """, unsafe_allow_html=True)
+
+if model is not None:
+    with st.expander("Informasi Detail Model"):
+        st.write("**Model berhasil dimuat:**")
+        st.write(f"- Tipe Model: {type(model).__name__}")
+        if hasattr(model, 'n_neighbors'):
+            st.write(f"- Jumlah Neighbors (K): {model.n_neighbors}")
+        if hasattr(model, 'metric'):
+            st.write(f"- Metrik Jarak: {model.metric}")
+        
+        st.write("**Fitur Input Model:**")
+        st.write("1. Jenis Kelamin (0: Perempuan, 1: Laki-laki)")
+        st.write("2. Tinggi Badan (cm)")
+        st.write("3. Berat Badan (kg)")
+        st.write("4. Umur Bulan")
+        st.write("5. Umur Tahun")
+        st.write("6. BMI")
+        st.write("7. BAZ (BMI-for-Age Z-score)")
+else:
+    st.warning("Model KNN tidak tersedia. Pastikan file 'knn_model.pkl' ada di direktori yang sama dengan aplikasi.")
+
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #666; margin-top: 2rem;">
-    <p>Aplikasi Klasifikasi Status Gizi | Dikembangkan untuk Analisis Kesehatan</p>
+    <p>Aplikasi Klasifikasi Status Gizi dengan AI | Powered by Machine Learning (KNN)</p>
+    <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
