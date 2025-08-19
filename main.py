@@ -148,27 +148,35 @@ def calculate_bmi(weight, height):
     bmi = weight / (height_m ** 2)
     return round(bmi, 1)
 
+lms_lk = pd.read_excel("laki_laki.xlsx")
+lms_pr = pd.read_excel("perempuan.xlsx")
+
+lms_lk.rename(columns={'Month': 'Umur_Bulan'}, inplace=True)
+lms_pr.rename(columns={'Month': 'Umur_Bulan'}, inplace=True)
+
 def calculate_baz(bmi, age_months, gender):
     """
     Menghitung BAZ (BMI-for-Age Z-score)
-    Ini adalah implementasi sederhana - dalam praktik nyata perlu data referensi WHO
     """
-    if gender == "Laki-laki":
-        if age_months <= 120:  # 0-10 tahun
-            mean_bmi = 15.5 + (age_months * 0.02)
-            sd_bmi = 1.2
-        else:  # 10+ tahun
-            mean_bmi = 17.0 + ((age_months - 120) * 0.03)
-            sd_bmi = 1.5
-    else:  # Perempuan
-        if age_months <= 120:  # 0-10 tahun
-            mean_bmi = 15.0 + (age_months * 0.025)
-            sd_bmi = 1.1
-        else:  # 10+ tahun
-            mean_bmi = 16.5 + ((age_months - 120) * 0.035)
-            sd_bmi = 1.4
-    
-    baz = (bmi - mean_bmi) / sd_bmi
+
+    if jk == 1:
+        lms_row = lms_lk[lms_lk['Umur_Bulan'] == age_months]
+    else:
+        lms_row = lms_pr[lms_pr['Umur_Bulan'] == age_months]
+
+    if lms_row.empty:
+        print("Data LMS untuk umur ini tidak ditemukan.")
+        return 0
+    else:
+        L = lms_row['L'].values[0]
+        M = lms_row['M'].values[0]
+        S = lms_row['S'].values[0]
+
+        if L != 0:
+            baz = ((bmi / M) ** L - 1) / (L * S)
+        else:
+            baz = np.log(bmi / M) / S
+        
     return round(baz, 2)
 
 def prepare_features(jk, tb, bb, age_months, age_years, bmi, baz):
@@ -203,7 +211,12 @@ with st.sidebar:
     jk = st.selectbox("Jenis Kelamin", ["Laki-laki", "Perempuan"])
     bb = st.number_input("Berat Badan (kg)", min_value=1.0, max_value=200.0, value=50.0, step=0.1)
     tb = st.number_input("Tinggi Badan (cm)", min_value=50.0, max_value=250.0, value=160.0, step=0.1)
-    tgl_lahir = st.date_input("Tanggal Lahir", value=date(2010, 1, 1))
+    tgl_lahir = st.date_input(
+        "Tanggal Lahir",
+        value=date(2010, 1, 1),
+        min_value=date(1900, 1, 1), 
+        max_value=date.today()
+    )
     tgl_ukur = st.date_input("Tanggal Ukur", value=date.today())
     
     st.markdown("---")
@@ -263,11 +276,11 @@ with col1:
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Berat Badan Lebih</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 25,0 - < 27,0</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 25,0 - < 29,9</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Obesitas</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 27,0</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 30,0</td>
             </tr>
         </table>
     </div>
