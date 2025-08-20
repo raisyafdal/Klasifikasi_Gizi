@@ -116,7 +116,7 @@ st.markdown("""
 def load_model_and_scaler():
     """Load model KNN dan scaler yang sudah dilatih"""
     try:
-        with open('knn_model.pkl', 'rb') as file:
+        with open('model.h5', 'rb') as file:
             model = joblib.load(file)
         
         try:
