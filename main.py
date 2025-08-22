@@ -154,10 +154,12 @@ lms_pr = pd.read_excel("perempuan.xlsx")
 lms_lk.rename(columns={'Month': 'Umur_Bulan'}, inplace=True)
 lms_pr.rename(columns={'Month': 'Umur_Bulan'}, inplace=True)
 
-def calculate_baz(bmi, age_months, gender):
+def calculate_baz(bmi, age_months, jk):
     """
     Menghitung BAZ (BMI-for-Age Z-score)
     """
+
+    jk = 1 if jk == "Laki-laki" else 0
 
     if jk == 1:
         lms_row = lms_lk[lms_lk['Umur_Bulan'] == age_months]
