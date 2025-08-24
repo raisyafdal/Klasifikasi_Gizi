@@ -116,7 +116,7 @@ st.markdown("""
 def load_model_and_scaler():
     """Load model KNN dan scaler yang sudah dilatih"""
     try:
-        with open('model.h5', 'rb') as file:
+        with open('tuning_knn.h5', 'rb') as file:
             model = joblib.load(file)
         
         try:
@@ -167,7 +167,7 @@ def calculate_baz(bmi, age_months, jk):
         lms_row = lms_pr[lms_pr['Umur_Bulan'] == age_months]
 
     if lms_row.empty:
-        print("Data LMS untuk umur ini tidak ditemukan.")
+        print(f"Data LMS untuk umur ini tidak ditemukan untuk kategori {jk}.")
         return 0
     else:
         L = lms_row['L'].values[0]
@@ -274,15 +274,15 @@ with col1:
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Normal</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 18,5 - < 24,9</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 18,5 - < 22,9</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Berat Badan Lebih</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 25,0 - < 29,9</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 23,0 - < 27,4</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Obesitas</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 30,0</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 27,5</td>
             </tr>
         </table>
     </div>
@@ -416,14 +416,14 @@ if submit_button:
             if bmi < 18.5:
                 bmi_interpretation = "Kurus ( < 18,5 )"
                 bmi_class = "underweight-status"
-            elif 18.5 <= bmi < 25:
-                bmi_interpretation = "Normal ( ≥ 18,5 - < 25,0 )"
+            elif 18.5 <= bmi < 22.9:
+                bmi_interpretation = "Normal ( ≥ 18,5 - < 22,9 )"
                 bmi_class = "normal-status"
-            elif 25 <= bmi < 27:
-                bmi_interpretation = "Berat Badan Lebih ( ≥ 25,0 - < 27,0 )"
+            elif 23 <= bmi < 27.4:
+                bmi_interpretation = "Berat Badan Lebih ( ≥ 23,0 - < 27,4 )"
                 bmi_class = "overweight-status"
             else:
-                bmi_interpretation = "Obesitas ( ≥ 27,0 )"
+                bmi_interpretation = "Obesitas ( ≥ 27,5 )"
                 bmi_class = "obesity-status"
 
             st.markdown(f"""
