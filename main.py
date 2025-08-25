@@ -234,7 +234,7 @@ with col1:
     
     st.markdown("""
     <div class="classification-card">
-        <h3>Klasifikasi Z-Score (Usia 5-14 Tahun)</h3>
+        <h3>Klasifikasi Z-Score 5 Tahun ( 61 - 68 Bulan )</h3>
         <table style="width:100%; border-collapse: collapse;">
             <tr style="background: rgba(255,255,255,0.2); color: white;">
                 <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">Klasifikasi</th>
@@ -262,7 +262,7 @@ with col1:
     
     st.markdown("""
     <div class="classification-card">
-        <h3>Klasifikasi IMT (Usia 15 Tahun ke Atas)</h3>
+        <h3>Klasifikasi IMT 17 - 20 Tahun</h3>
         <table style="width:100%; border-collapse: collapse;">
             <tr style="background: rgba(255,255,255,0.2); color: white;">
                 <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">Klasifikasi</th>
@@ -301,8 +301,8 @@ with col2:
         <br>
         <h4>Informasi Klasifikasi</h4>
         <ul>
-            <li><strong>Z-Score:</strong> Usia 5-14 tahun</li>
-            <li><strong>IMT:</strong> Usia 15+ tahun</li>
+            <li><strong>Z-Score:</strong> Usia 5 tahun ( 61 - 68 Bulan )</li>
+            <li><strong>IMT:</strong> Usia 17 - 20 tahun</li>
             <li><strong>BAZ:</strong> BMI-for-Age Z-score</li>
             <li><strong>SD:</strong> Standard Deviasi</li>
         </ul>
@@ -500,3 +500,4 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
+
