@@ -194,7 +194,7 @@ def get_status_class(prediction):
         "Normal": "normal-status",
         "Kurus": "underweight-status", 
         "Berat Badan Lebih": "overweight-status",
-        "Obesitas": "obesity-status"
+        "Obesitas": "obesity-status",
     }
     return status_mapping.get(prediction, "result-card")
 
@@ -336,8 +336,13 @@ if submit_button:
                 st.metric("BMI", f"{bmi}")
         else :
             st.metric("BAZ (BMI-for-Age Z-score)", f"{baz}")
+
+        is_predict = False
+
+        if 5 <= age_years <= 20:
+            is_predict = True
         
-        if use_ai_prediction and model is not None and scaler is not None:
+        if is_predict and use_ai_prediction and model is not None and scaler is not None:
             try:
                 features = prepare_features(jk, tb, bb, age_months, age_years, bmi, baz)
                 
@@ -351,9 +356,9 @@ if submit_button:
                 except:
                     confidence = None
                 
-                status_class = get_status_class(prediction)
+                label = ['Berat Badan Lebih', 'Kurus', 'Kurus', 'Normal', 'Obesitas']
 
-                label = ['Berat Badan Lebih', 'Di luar kategori tabel', 'Kurus', 'Normal', 'Obesitas']
+                status_class = get_status_class(label[prediction])
 
                 if age_years > 15:
                     result_card = f"BMI:</strong> {bmi}"
@@ -409,6 +414,21 @@ if submit_button:
                 st.error(f"Error dalam prediksi AI: {str(e)}")
                 st.info("Menggunakan klasifikasi manual sebagai fallback.")
                 use_ai_prediction = False
+        else:
+            if age_years > 15:
+                result_card = f"BMI:</strong> {bmi}"
+            else:
+                result_card = f"<strong>BAZ:</strong> {baz}"
+
+            st.markdown(f"""
+                <div class="result-card">
+                    <h3>Mohon maaf prediksi gagal di lakukan</h3>
+                    <h2>Data yang anda masukan di luar kategori <br> yang di tetapkan</h2>
+                    <p><strong>Metode:</strong> Machine Learning (KNN)</p>
+                    <p><strong>{result_card}</p>
+                    <p><strong>Umur:</strong> {age_years} tahun ({age_months} bulan)</p>
+                </div>
+            """, unsafe_allow_html=True)
 
         if age_years > 15:
             st.markdown("### Interpretasi IMT")
