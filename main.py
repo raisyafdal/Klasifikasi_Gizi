@@ -339,7 +339,7 @@ if submit_button:
 
         is_predict = False
 
-        if 5 <= age_years <= 20:
+        if (61 <= age_months <= 68) or (17 <= age_years <= 20):
             is_predict = True
         
         if is_predict and use_ai_prediction and model is not None and scaler is not None:
@@ -500,4 +500,5 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
+
 
