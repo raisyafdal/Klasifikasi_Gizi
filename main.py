@@ -116,17 +116,23 @@ st.markdown("""
 def load_model_and_scaler():
     """Load model KNN dan scaler yang sudah dilatih"""
     try:
-        with open('tuning_knn.h5', 'rb') as file:
-            model = joblib.load(file)
+        with open('model/model_child.h5', 'rb') as file:
+            model_child = joblib.load(file)
+       
+        with open('model/model_teen.h5', 'rb') as file:
+            model_teen = joblib.load(file)
         
         try:
-            with open('scaler.pkl', 'rb') as file:
-                scaler = joblib.load(file)
+            with open('model/scaler_child.pkl', 'rb') as file:
+                scaler_child = joblib.load(file)
+           
+            with open('model/scaler_teen.pkl', 'rb') as file:
+                scaler_teen = joblib.load(file)
         except FileNotFoundError:
             st.warning("Scaler tidak ditemukan. Menggunakan scaler default.")
             scaler = StandardScaler()
         
-        return model, scaler
+        return model_child, model_teen, scaler_child, scaler_teen
     except FileNotFoundError:
         st.error("Model knn_model.pkl tidak ditemukan. Pastikan file model ada di direktori yang sama.")
         return None, None
@@ -205,7 +211,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-model, scaler = load_model_and_scaler()
+model_child, model_teen, scaler_child, scaler_teen = load_model_and_scaler()
 
 st.sidebar.header("Input Data Pengukuran")
 
@@ -234,7 +240,7 @@ with col1:
     
     st.markdown("""
     <div class="classification-card">
-        <h3>Klasifikasi Z-Score 5 Tahun ( 61 - 68 Bulan )</h3>
+        <h3>Klasifikasi Z-Score (Usia 5-14 Tahun)</h3>
         <table style="width:100%; border-collapse: collapse;">
             <tr style="background: rgba(255,255,255,0.2); color: white;">
                 <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">Klasifikasi</th>
@@ -262,7 +268,7 @@ with col1:
     
     st.markdown("""
     <div class="classification-card">
-        <h3>Klasifikasi IMT 17 - 20 Tahun</h3>
+        <h3>Klasifikasi IMT (Usia 15 Tahun ke Atas)</h3>
         <table style="width:100%; border-collapse: collapse;">
             <tr style="background: rgba(255,255,255,0.2); color: white;">
                 <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">Klasifikasi</th>
@@ -301,8 +307,8 @@ with col2:
         <br>
         <h4>Informasi Klasifikasi</h4>
         <ul>
-            <li><strong>Z-Score:</strong> Usia 5 tahun ( 61 - 68 Bulan )</li>
-            <li><strong>IMT:</strong> Usia 17 - 20 tahun</li>
+            <li><strong>Z-Score:</strong> Usia 5-14 tahun</li>
+            <li><strong>IMT:</strong> Usia 15+ tahun</li>
             <li><strong>BAZ:</strong> BMI-for-Age Z-score</li>
             <li><strong>SD:</strong> Standard Deviasi</li>
         </ul>
@@ -339,24 +345,32 @@ if submit_button:
 
         is_predict = False
 
-        if (61 <= age_months <= 68) or (17 <= age_years <= 20):
+        if (60 <= age_months <= 68) or (204 <= age_months <= 251):
             is_predict = True
-        
-        if is_predict and use_ai_prediction and model is not None and scaler is not None:
+
+        if is_predict and use_ai_prediction and (model_child or model_teen) is not None and (scaler_child or scaler_teen) is not None:
             try:
                 features = prepare_features(jk, tb, bb, age_months, age_years, bmi, baz)
-                
-                features_scaled = scaler.transform(features)
 
-                prediction = model.predict(features_scaled)[0]
+                if 60 <= age_months <= 68:
+                
+                    features_scaled = scaler_child.transform(features)
+                    prediction = model_child.predict(features_scaled)[0]
+                elif 204 <= age_months <= 251:
+                    features_scaled = scaler_teen.transform(features)
+                    prediction = model_teen.predict(features_scaled)[0]
                 
                 try:
-                    prediction_proba = model.predict_proba(features_scaled)[0]
+                    if 60 <= age_months <= 68:
+                        prediction_proba = model_child.predict_proba(features_scaled)[0]
+                    elif 204 <= age_months <= 251:
+                        prediction_proba = model_teen.predict_proba(features_scaled)[0]
+
                     confidence = max(prediction_proba) * 100
                 except:
                     confidence = None
                 
-                label = ['Berat Badan Lebih', 'Kurus', 'Kurus', 'Normal', 'Obesitas']
+                label = ['Berat Badan Lebih', 'Kurus', 'Normal', 'Obesitas']
 
                 status_class = get_status_class(label[prediction])
 
@@ -473,14 +487,36 @@ if submit_button:
             </div>
             """, unsafe_allow_html=True)
 
-if model is not None:
+if model_teen is not None and model_child is not None:
     with st.expander("Informasi Detail Model"):
         st.write("**Model berhasil dimuat:**")
-        st.write(f"- Tipe Model: {type(model).__name__}")
-        if hasattr(model, 'n_neighbors'):
-            st.write(f"- Jumlah Neighbors (K): {model.n_neighbors}")
-        if hasattr(model, 'metric'):
-            st.write(f"- Metrik Jarak: {model.metric}")
+        st.write(f"- Tipe Model: {type(model_teen).__name__}")
+
+        if hasattr(model_teen, 'n_neighbors'):
+            st.write(f"- Jumlah Neighbors (K): {model_teen.n_neighbors}")
+        if hasattr(model_teen, 'metric'):
+            st.write(f"- Metrik Jarak: {model_teen.metric}")
+        
+        st.write("**Fitur Input Model:**")
+        st.write("1. Jenis Kelamin (0: Perempuan, 1: Laki-laki)")
+        st.write("2. Tinggi Badan (cm)")
+        st.write("3. Berat Badan (kg)")
+        st.write("4. Umur Bulan")
+        st.write("5. Umur Tahun")
+        st.write("6. BMI")
+        st.write("7. BAZ (BMI-for-Age Z-score)")
+        
+        st.write("")
+        st.write("="*30)
+        st.write("")
+
+        st.write("**Model berhasil dimuat:**")
+        st.write(f"- Tipe Model: {type(model_child).__name__}")
+
+        if hasattr(model_child, 'n_neighbors'):
+            st.write(f"- Jumlah Neighbors (K): {model_child.n_neighbors}")
+        if hasattr(model_child, 'metric'):
+            st.write(f"- Metrik Jarak: {model_child.metric}")
         
         st.write("**Fitur Input Model:**")
         st.write("1. Jenis Kelamin (0: Perempuan, 1: Laki-laki)")
@@ -500,5 +536,3 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
-
-
