@@ -489,7 +489,7 @@ if submit_button:
 
 if model_teen is not None and model_child is not None:
     with st.expander("Informasi Detail Model"):
-        st.write("**Model berhasil dimuat:**")
+        st.write("**Model untuk Remaja 17 - 20 Tahun berhasil dimuat:**")
         st.write(f"- Tipe Model: {type(model_teen).__name__}")
 
         if hasattr(model_teen, 'n_neighbors'):
@@ -510,7 +510,7 @@ if model_teen is not None and model_child is not None:
         st.write("="*30)
         st.write("")
 
-        st.write("**Model berhasil dimuat:**")
+        st.write("**Model untuk Anak 5 Tahun berhasil dimuat:**")
         st.write(f"- Tipe Model: {type(model_child).__name__}")
 
         if hasattr(model_child, 'n_neighbors'):
@@ -536,4 +536,5 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
+
 
