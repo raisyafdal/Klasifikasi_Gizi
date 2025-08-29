@@ -451,10 +451,10 @@ if submit_button:
                 bmi_interpretation = "Kurus ( < 18,5 )"
                 bmi_class = "underweight-status"
             elif 18.5 <= bmi < 22.9:
-                bmi_interpretation = "Normal ( ≥ 18,5 - < 22,9 )"
+                bmi_interpretation = "Normal ( ≥ 18,5 sd < 22,9 )"
                 bmi_class = "normal-status"
             elif 23 <= bmi < 27.4:
-                bmi_interpretation = "Berat Badan Lebih ( ≥ 23,0 - < 27,4 )"
+                bmi_interpretation = "Berat Badan Lebih ( ≥ 23,0 sd < 27,4 )"
                 bmi_class = "overweight-status"
             else:
                 bmi_interpretation = "Obesitas ( ≥ 27,5 )"
@@ -536,6 +536,7 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
