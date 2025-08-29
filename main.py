@@ -116,17 +116,17 @@ st.markdown("""
 def load_model_and_scaler():
     """Load model KNN dan scaler yang sudah dilatih"""
     try:
-        with open('model/model_child.h5', 'rb') as file:
+        with open('model_child.h5', 'rb') as file:
             model_child = joblib.load(file)
        
-        with open('model/model_teen.h5', 'rb') as file:
+        with open('model_teen.h5', 'rb') as file:
             model_teen = joblib.load(file)
         
         try:
-            with open('model/scaler_child.pkl', 'rb') as file:
+            with open('scaler_child.pkl', 'rb') as file:
                 scaler_child = joblib.load(file)
            
-            with open('model/scaler_teen.pkl', 'rb') as file:
+            with open('scaler_teen.pkl', 'rb') as file:
                 scaler_teen = joblib.load(file)
         except FileNotFoundError:
             st.warning("Scaler tidak ditemukan. Menggunakan scaler default.")
@@ -536,3 +536,4 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
+
