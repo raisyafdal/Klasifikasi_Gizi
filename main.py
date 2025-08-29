@@ -268,7 +268,7 @@ with col1:
     
     st.markdown("""
     <div class="classification-card">
-        <h3>Klasifikasi IMT (Usia 17-20Tahun)</h3>
+        <h3>Klasifikasi IMT (Usia 17-20 Tahun)</h3>
         <table style="width:100%; border-collapse: collapse;">
             <tr style="background: rgba(255,255,255,0.2); color: white;">
                 <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">Klasifikasi</th>
@@ -536,6 +536,7 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
