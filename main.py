@@ -217,8 +217,8 @@ st.sidebar.header("Input Data Pengukuran")
 
 with st.sidebar:
     jk = st.selectbox("Jenis Kelamin", ["Laki-laki", "Perempuan"])
-    bb = st.number_input("Berat Badan (kg)", min_value=1.0, max_value=200.0, value=50.0, step=0.1)
-    tb = st.number_input("Tinggi Badan (cm)", min_value=50.0, max_value=250.0, value=160.0, step=0.1)
+    bb = st.number_input("Berat Badan (kg)", min_value=1.0, max_value=200.0, value=50.0, step=1.0)
+    tb = st.number_input("Tinggi Badan (cm)", min_value=50.0, max_value=250.0, value=160.0, step=1.0)
     tgl_lahir = st.date_input(
         "Tanggal Lahir",
         value=date(2010, 1, 1),
@@ -536,6 +536,7 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
