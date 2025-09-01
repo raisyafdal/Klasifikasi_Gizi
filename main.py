@@ -116,17 +116,17 @@ st.markdown("""
 def load_model_and_scaler():
     """Load model KNN dan scaler yang sudah dilatih"""
     try:
-        with open('model_child.h5', 'rb') as file:
+        with open('model/model_child.h5', 'rb') as file:
             model_child = joblib.load(file)
        
-        with open('model_teen.h5', 'rb') as file:
+        with open('model/model_teen.h5', 'rb') as file:
             model_teen = joblib.load(file)
         
         try:
-            with open('scaler_child.pkl', 'rb') as file:
+            with open('model/scaler_child.pkl', 'rb') as file:
                 scaler_child = joblib.load(file)
            
-            with open('scaler_teen.pkl', 'rb') as file:
+            with open('model/scaler_teen.pkl', 'rb') as file:
                 scaler_teen = joblib.load(file)
         except FileNotFoundError:
             st.warning("Scaler tidak ditemukan. Menggunakan scaler default.")
@@ -187,10 +187,17 @@ def calculate_baz(bmi, age_months, jk):
         
     return round(baz, 2)
 
-def prepare_features(jk, tb, bb, age_months, age_years, bmi, baz):
+def prepare_features_anak(jk, tb, bb, age_months, baz):
     """Menyiapkan fitur untuk prediksi model"""
     gender_encoded = 1 if jk == "Laki-laki" else 0
-    features = np.array([[gender_encoded, tb, bb, age_months, age_years, bmi, baz]])
+    features = np.array([[gender_encoded, tb, bb, age_months, baz]])
+    
+    return features
+
+def prepare_features_remaja(jk, bmi):
+    """Menyiapkan fitur untuk prediksi model"""
+    gender_encoded = 1 if jk == "Laki-laki" else 0
+    features = np.array([[gender_encoded, bmi]])
     
     return features
 
@@ -206,7 +213,7 @@ def get_status_class(prediction):
 
 st.markdown("""
 <div class="main-header">
-    <h1>Aplikasi Klasifikasi Status Gizi</h1>
+    <h1>Aplikasi Klasifikasi Status Gizi dengan AI</h1>
     <p>Sistem Prediksi Status Gizi Menggunakan Machine Learning (KNN)</p>
 </div>
 """, unsafe_allow_html=True)
@@ -229,7 +236,7 @@ with st.sidebar:
     
     st.markdown("---")
     
-    use_ai_prediction = st.checkbox("Gunakan Prediksi (Model KNN)", value=True)
+    use_ai_prediction = st.checkbox("Gunakan Prediksi AI (Model KNN)", value=True)
     
     submit_button = st.button("Analisis Status Gizi", type="primary")
 
@@ -240,7 +247,7 @@ with col1:
     
     st.markdown("""
     <div class="classification-card">
-        <h3>Klasifikasi Z-Score (Usia 61-68 bulan)</h3>
+        <h3>Klasifikasi Z-Score 5 Tahun ( 60 - 68 Bulan )</h3>
         <table style="width:100%; border-collapse: collapse;">
             <tr style="background: rgba(255,255,255,0.2); color: white;">
                 <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">Klasifikasi</th>
@@ -268,7 +275,7 @@ with col1:
     
     st.markdown("""
     <div class="classification-card">
-        <h3>Klasifikasi IMT (Usia 17-20 Tahun)</h3>
+        <h3>Klasifikasi IMT 17 - 20 Tahun</h3>
         <table style="width:100%; border-collapse: collapse;">
             <tr style="background: rgba(255,255,255,0.2); color: white;">
                 <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">Klasifikasi</th>
@@ -276,19 +283,19 @@ with col1:
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Kurus</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">< 18,5</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">17 - < 18,5</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Normal</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 18,5 - < 22,9</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 18,5 - < 25</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Berat Badan Lebih</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 23,0 - < 27,4</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 25,0 - < 27</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Obesitas</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 27,5</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 27</td>
             </tr>
         </table>
     </div>
@@ -307,8 +314,8 @@ with col2:
         <br>
         <h4>Informasi Klasifikasi</h4>
         <ul>
-            <li><strong>Z-Score:</strong> Usia 61-68 bulan</li>
-            <li><strong>IMT:</strong> Usia 17-20 tahun</li>
+            <li><strong>Z-Score:</strong> Usia 5 Tahun ( 60-68 bulan )</li>
+            <li><strong>IMT:</strong> Usia 17 - 20 tahun</li>
             <li><strong>BAZ:</strong> BMI-for-Age Z-score</li>
             <li><strong>SD:</strong> Standard Deviasi</li>
         </ul>
@@ -339,7 +346,7 @@ if submit_button:
 
         if age_years > 15:
             with col5:
-                st.metric("BMI", f"{bmi}")
+                st.metric("IMT", f"{bmi}")
         else :
             st.metric("BAZ (BMI-for-Age Z-score)", f"{baz}")
 
@@ -350,13 +357,13 @@ if submit_button:
 
         if is_predict and use_ai_prediction and (model_child or model_teen) is not None and (scaler_child or scaler_teen) is not None:
             try:
-                features = prepare_features(jk, tb, bb, age_months, age_years, bmi, baz)
 
                 if 60 <= age_months <= 68:
-                
+                    features = prepare_features_anak(jk, tb, bb, age_months, baz)
                     features_scaled = scaler_child.transform(features)
                     prediction = model_child.predict(features_scaled)[0]
                 elif 204 <= age_months <= 251:
+                    features = prepare_features_remaja(jk, bmi)
                     features_scaled = scaler_teen.transform(features)
                     prediction = model_teen.predict(features_scaled)[0]
                 
@@ -375,7 +382,7 @@ if submit_button:
                 status_class = get_status_class(label[prediction])
 
                 if age_years > 15:
-                    result_card = f"BMI:</strong> {bmi}"
+                    result_card = f"IMT:</strong> {bmi}"
                 else:
                     result_card = f"<strong>BAZ:</strong> {baz}"
                 
@@ -400,29 +407,41 @@ if submit_button:
                 
                 with st.expander("🔍 Detail Fitur yang Digunakan Model"):
                     gender_display = "1 (Laki-laki)" if jk == "Laki-laki" else "0 (Perempuan)"
+
+                    if 204 <= age_months <= 251:
                     
-                    feature_df = pd.DataFrame({
-                        'Fitur': ['Jenis Kelamin', 'Tinggi Badan', 'Berat Badan', 'Umur Bulan', 'Umur Tahun', 'BMI', 'BAZ'],
-                        'Nilai Asli': [
-                            gender_display,
-                            f"{tb} cm",
-                            f"{bb} kg", 
-                            f"{age_months} bulan",
-                            f"{age_years} tahun",
-                            f"{bmi}",
-                            f"{baz}"
-                        ],
-                        'Nilai Normalized': [
-                            f"{features_scaled[0][0]:.3f}",
-                            f"{features_scaled[0][1]:.3f}",
-                            f"{features_scaled[0][2]:.3f}",
-                            f"{features_scaled[0][3]:.3f}",
-                            f"{features_scaled[0][4]:.3f}",
-                            f"{features_scaled[0][5]:.3f}",
-                            f"{features_scaled[0][6]:.3f}"
-                        ]
-                    })
-                    st.dataframe(feature_df, use_container_width=True)
+                        feature_df = pd.DataFrame({
+                            'Fitur': ['Jenis Kelamin', 'IMT'],
+                            'Nilai Asli': [
+                                gender_display,
+                                f"{bmi}",
+                            ],
+                            'Nilai Normalized': [
+                                f"{features_scaled[0][0]:.3f}",
+                                f"{features_scaled[0][1]:.3f}",
+                            ]
+                        })
+                        st.dataframe(feature_df, use_container_width=True)
+                    elif 60 <= age_months <= 68:
+                        feature_df = pd.DataFrame({
+                            'Fitur': ['Jenis Kelamin', 'Tinggi Badan', 'Berat Badan', 'Umur Bulan', 'BAZ'],
+                            'Nilai Asli': [
+                                gender_display,
+                                f"{tb} cm",
+                                f"{bb} kg", 
+                                f"{age_months} bulan",
+                                f"{baz}"
+                            ],
+                            'Nilai Normalized': [
+                                f"{features_scaled[0][0]:.3f}",
+                                f"{features_scaled[0][1]:.3f}",
+                                f"{features_scaled[0][2]:.3f}",
+                                f"{features_scaled[0][3]:.3f}",
+                                f"{features_scaled[0][4]:.3f}",
+                            ]
+                        })
+
+                        st.dataframe(feature_df, use_container_width=True)
                 
             except Exception as e:
                 st.error(f"Error dalam prediksi AI: {str(e)}")
@@ -451,13 +470,13 @@ if submit_button:
                 bmi_interpretation = "Kurus ( < 18,5 )"
                 bmi_class = "underweight-status"
             elif 18.5 <= bmi < 22.9:
-                bmi_interpretation = "Normal ( ≥ 18,5 sd < 22,9 )"
+                bmi_interpretation = "Normal ( ≥ 18,5 - < 25 )"
                 bmi_class = "normal-status"
             elif 23 <= bmi < 27.4:
-                bmi_interpretation = "Berat Badan Lebih ( ≥ 23,0 sd < 27,4 )"
+                bmi_interpretation = "Berat Badan Lebih ( ≥ 25,0 - < 27 )"
                 bmi_class = "overweight-status"
             else:
-                bmi_interpretation = "Obesitas ( ≥ 27,5 )"
+                bmi_interpretation = "Obesitas ( ≥ 27 )"
                 bmi_class = "obesity-status"
 
             st.markdown(f"""
@@ -489,7 +508,7 @@ if submit_button:
 
 if model_teen is not None and model_child is not None:
     with st.expander("Informasi Detail Model"):
-        st.write("**Model untuk Remaja 17 - 20 Tahun berhasil dimuat:**")
+        st.write("**Model Remaja berhasil dimuat:**")
         st.write(f"- Tipe Model: {type(model_teen).__name__}")
 
         if hasattr(model_teen, 'n_neighbors'):
@@ -499,18 +518,13 @@ if model_teen is not None and model_child is not None:
         
         st.write("**Fitur Input Model:**")
         st.write("1. Jenis Kelamin (0: Perempuan, 1: Laki-laki)")
-        st.write("2. Tinggi Badan (cm)")
-        st.write("3. Berat Badan (kg)")
-        st.write("4. Umur Bulan")
-        st.write("5. Umur Tahun")
-        st.write("6. BMI")
-        st.write("7. BAZ (BMI-for-Age Z-score)")
+        st.write("2. IMT")
         
         st.write("")
         st.write("="*30)
         st.write("")
 
-        st.write("**Model untuk Anak 5 Tahun berhasil dimuat:**")
+        st.write("**Model Anak berhasil dimuat:**")
         st.write(f"- Tipe Model: {type(model_child).__name__}")
 
         if hasattr(model_child, 'n_neighbors'):
@@ -524,8 +538,7 @@ if model_teen is not None and model_child is not None:
         st.write("3. Berat Badan (kg)")
         st.write("4. Umur Bulan")
         st.write("5. Umur Tahun")
-        st.write("6. BMI")
-        st.write("7. BAZ (BMI-for-Age Z-score)")
+        st.write("6. BAZ (BMI-for-Age Z-score)")
 else:
     st.warning("Model KNN tidak tersedia. Pastikan file 'knn_model.pkl' ada di direktori yang sama dengan aplikasi.")
 
@@ -536,9 +549,3 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
-
-
-
-
-
-
