@@ -116,17 +116,17 @@ st.markdown("""
 def load_model_and_scaler():
     """Load model KNN dan scaler yang sudah dilatih"""
     try:
-        with open('model/model_child.h5', 'rb') as file:
+        with open('model_child.h5', 'rb') as file:
             model_child = joblib.load(file)
        
-        with open('model/model_teen.h5', 'rb') as file:
+        with open('model_teen.h5', 'rb') as file:
             model_teen = joblib.load(file)
         
         try:
-            with open('model/scaler_child.pkl', 'rb') as file:
+            with open('scaler_child.pkl', 'rb') as file:
                 scaler_child = joblib.load(file)
            
-            with open('model/scaler_teen.pkl', 'rb') as file:
+            with open('scaler_teen.pkl', 'rb') as file:
                 scaler_teen = joblib.load(file)
         except FileNotFoundError:
             st.warning("Scaler tidak ditemukan. Menggunakan scaler default.")
@@ -344,10 +344,10 @@ if submit_button:
         with col4:
             st.metric("Tinggi Badan", f"{tb} cm")
 
-        if age_years > 15:
+        if 204 <= age_months <= 251:
             with col5:
                 st.metric("IMT", f"{bmi}")
-        else :
+        elif 60 <= age_months <= 68:
             st.metric("BAZ (BMI-for-Age Z-score)", f"{baz}")
 
         is_predict = False
@@ -463,16 +463,16 @@ if submit_button:
                 </div>
             """, unsafe_allow_html=True)
 
-        if age_years > 15:
+        if 204 <= age_months <= 251:
             st.markdown("### Interpretasi IMT")
 
-            if bmi < 18.5:
-                bmi_interpretation = "Kurus ( < 18,5 )"
+            if 17 < bmi < 18.5:
+                bmi_interpretation = "Kurus ( 17 - < 18,5 )"
                 bmi_class = "underweight-status"
-            elif 18.5 <= bmi < 22.9:
+            elif 18.5 <= bmi < 25:
                 bmi_interpretation = "Normal ( ≥ 18,5 - < 25 )"
                 bmi_class = "normal-status"
-            elif 23 <= bmi < 27.4:
+            elif 25 <= bmi < 27:
                 bmi_interpretation = "Berat Badan Lebih ( ≥ 25,0 - < 27 )"
                 bmi_class = "overweight-status"
             else:
@@ -485,7 +485,7 @@ if submit_button:
             </div>
             """, unsafe_allow_html=True)
 
-        else:
+        elif 60 <= age_months <= 68:
             st.markdown("### Interpretasi BAZ (BMI-for-Age Z-score)")
             if baz < -2:
                 baz_interpretation = "Kurus (BAZ < -2 SD)"
