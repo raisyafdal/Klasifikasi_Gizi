@@ -283,15 +283,15 @@ with col1:
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Kurus</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">17 - < 18,5</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">< 18,5</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Normal</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 18,5 - < 25</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 18,5 sd < 25</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Berat Badan Lebih</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 25,0 - < 27</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 25,0 sd < 27</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Obesitas</td>
@@ -549,4 +549,5 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
+
 
