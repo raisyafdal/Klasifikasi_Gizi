@@ -466,8 +466,8 @@ if submit_button:
         if 204 <= age_months <= 251:
             st.markdown("### Interpretasi IMT")
 
-            if 17 < bmi < 18.5:
-                bmi_interpretation = "Kurus ( 17 - < 18,5 )"
+            if bmi < 18.5:
+                bmi_interpretation = "Kurus ( < 18,5 )"
                 bmi_class = "underweight-status"
             elif 18.5 <= bmi < 25:
                 bmi_interpretation = "Normal ( ≥ 18,5 - < 25 )"
@@ -549,3 +549,4 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
+
