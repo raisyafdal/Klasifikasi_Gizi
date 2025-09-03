@@ -116,17 +116,17 @@ st.markdown("""
 def load_model_and_scaler():
     """Load model KNN dan scaler yang sudah dilatih"""
     try:
-        with open('model_child.h5', 'rb') as file:
+        with open('model/model_child.h5', 'rb') as file:
             model_child = joblib.load(file)
        
-        with open('model_teen.h5', 'rb') as file:
+        with open('model/model_teen.h5', 'rb') as file:
             model_teen = joblib.load(file)
         
         try:
-            with open('scaler_child.pkl', 'rb') as file:
+            with open('model/scaler_child.pkl', 'rb') as file:
                 scaler_child = joblib.load(file)
            
-            with open('scaler_teen.pkl', 'rb') as file:
+            with open('model/scaler_teen.pkl', 'rb') as file:
                 scaler_teen = joblib.load(file)
         except FileNotFoundError:
             st.warning("Scaler tidak ditemukan. Menggunakan scaler default.")
@@ -187,20 +187,12 @@ def calculate_baz(bmi, age_months, jk):
         
     return round(baz, 2)
 
-def prepare_features_anak(jk, tb, bb, age_months, baz):
+def prepare_features(jk, tb, bb, age_years, age_months, bmi, baz):
     """Menyiapkan fitur untuk prediksi model"""
     gender_encoded = 1 if jk == "Laki-laki" else 0
-    features = np.array([[gender_encoded, tb, bb, age_months, baz]])
+    features = np.array([[gender_encoded, tb, bb, age_years, age_months, bmi, baz]])
     
     return features
-
-def prepare_features_remaja(jk, bmi):
-    """Menyiapkan fitur untuk prediksi model"""
-    gender_encoded = 1 if jk == "Laki-laki" else 0
-    features = np.array([[gender_encoded, bmi]])
-    
-    return features
-
 def get_status_class(prediction):
     """Mendapatkan class CSS berdasarkan prediksi"""
     status_mapping = {
@@ -283,15 +275,15 @@ with col1:
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Kurus</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">< 18,5</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">17 - < 18,5</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Normal</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 18,5 sd < 25</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 18,5 - < 25</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Berat Badan Lebih</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 25,0 sd < 27</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 25,0 - < 27</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Obesitas</td>
@@ -359,11 +351,11 @@ if submit_button:
             try:
 
                 if 60 <= age_months <= 68:
-                    features = prepare_features_anak(jk, tb, bb, age_months, baz)
+                    features = prepare_features(jk, tb, bb, age_years, age_months, bmi, baz)
                     features_scaled = scaler_child.transform(features)
                     prediction = model_child.predict(features_scaled)[0]
                 elif 204 <= age_months <= 251:
-                    features = prepare_features_remaja(jk, bmi)
+                    features = prepare_features(jk, tb, bb, age_years, age_months, bmi, baz)
                     features_scaled = scaler_teen.transform(features)
                     prediction = model_teen.predict(features_scaled)[0]
                 
@@ -467,7 +459,7 @@ if submit_button:
             st.markdown("### Interpretasi IMT")
 
             if bmi < 18.5:
-                bmi_interpretation = "Kurus ( < 18,5 )"
+                bmi_interpretation = "Kurus ( 17 - < 18,5 )"
                 bmi_class = "underweight-status"
             elif 18.5 <= bmi < 25:
                 bmi_interpretation = "Normal ( ≥ 18,5 - < 25 )"
@@ -549,5 +541,3 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
-
-
