@@ -116,10 +116,10 @@ st.markdown("""
 def load_model_and_scaler():
     """Load model KNN dan scaler yang sudah dilatih"""
     try:
-        with open('model_child.h5', 'rb') as file:
+        with open('model_child.pkl', 'rb') as file:
             model_child = joblib.load(file)
        
-        with open('model_teen.h5', 'rb') as file:
+        with open('model_teen.pkl', 'rb') as file:
             model_teen = joblib.load(file)
         
         try:
@@ -148,11 +148,19 @@ def calculate_age_months(birth_date, measure_date):
     total_months = age_years * 12 + age_months
     return total_months
 
-def calculate_bmi(weight, height):
-    """Menghitung BMI/IMT"""
-    height_m = height / 100  # convert cm to m
+def calculate_bmi(weight: float, height: float):
+    """
+    Hitung BMI/IMT dari berat (kg) dan tinggi (cm).
+    Bisa dipakai untuk 1 value maupun apply di DataFrame.
+    """
+    if weight is None or height is None or height == 0:
+        return np.nan
+
+    height_m = height / 100  # konversi cm → meter
     bmi = weight / (height_m ** 2)
-    return round(bmi, 1)
+
+    return bmi
+
 
 lms_lk = pd.read_excel("laki_laki.xlsx")
 lms_pr = pd.read_excel("perempuan.xlsx")
@@ -160,37 +168,58 @@ lms_pr = pd.read_excel("perempuan.xlsx")
 lms_lk.rename(columns={'Month': 'Umur_Bulan'}, inplace=True)
 lms_pr.rename(columns={'Month': 'Umur_Bulan'}, inplace=True)
 
-def calculate_baz(bmi, age_months, jk):
+def get_lms(age_months: int, jk: int):
     """
-    Menghitung BAZ (BMI-for-Age Z-score)
+    Ambil nilai L, M, S dari tabel LMS berdasarkan umur & jenis kelamin.
+    jk: 1 = laki-laki, 0 = perempuan
     """
-
-    jk = 1 if jk == "Laki-laki" else 0
-
     if jk == 1:
         lms_row = lms_lk[lms_lk['Umur_Bulan'] == age_months]
     else:
         lms_row = lms_pr[lms_pr['Umur_Bulan'] == age_months]
 
     if lms_row.empty:
-        print(f"Data LMS untuk umur ini tidak ditemukan untuk kategori {jk}.")
-        return 0
+        return np.nan, np.nan, np.nan
+
+    return (
+        lms_row['L'].values[0],
+        lms_row['M'].values[0],
+        lms_row['S'].values[0],
+    )
+
+
+def calculate_baz(bmi: float, age_months: int, jk: str | int):
+    """
+    Hitung BAZ (BMI-for-Age Z-score) untuk 1 sampel.
+    jk bisa berupa "Laki-laki"/"Perempuan" atau 1/0.
+    """
+    if isinstance(jk, str):
+        jk = 1 if jk.lower() == "laki-laki" else 0
+
+    L, M, S = get_lms(age_months, jk)
+
+    if np.isnan(L) or np.isnan(M) or np.isnan(S):
+        return np.nan
+
+    if L != 0:
+        baz = ((bmi / M) ** L - 1) / (L * S)
     else:
-        L = lms_row['L'].values[0]
-        M = lms_row['M'].values[0]
-        S = lms_row['S'].values[0]
+        baz = np.log(bmi / M) / S
 
-        if L != 0:
-            baz = ((bmi / M) ** L - 1) / (L * S)
-        else:
-            baz = np.log(bmi / M) / S
-        
-    return round(baz, 2)
+    return baz
 
-def prepare_features(jk, tb, bb, age_years, age_months, bmi, baz):
+
+def prepare_features_teen(jk, bmi):
     """Menyiapkan fitur untuk prediksi model"""
     gender_encoded = 1 if jk == "Laki-laki" else 0
-    features = np.array([[gender_encoded, tb, bb, age_years, age_months, bmi, baz]])
+    features = np.array([[gender_encoded, bmi]])
+
+    return features
+    
+def prepare_features_child(jk, tb, bb, age_months, baz):
+    """Menyiapkan fitur untuk prediksi model"""
+    gender_encoded = 1 if jk == "Laki-laki" else 0
+    features = np.array([[gender_encoded, tb, bb, age_months, baz]])
     
     return features
 def get_status_class(prediction):
@@ -351,11 +380,11 @@ if submit_button:
             try:
 
                 if 60 <= age_months <= 68:
-                    features = prepare_features(jk, tb, bb, age_years, age_months, bmi, baz)
+                    features = prepare_features_child(jk, tb, bb, age_months, baz)
                     features_scaled = scaler_child.transform(features)
                     prediction = model_child.predict(features_scaled)[0]
                 elif 204 <= age_months <= 251:
-                    features = prepare_features(jk, tb, bb, age_years, age_months, bmi, baz)
+                    features = prepare_features_teen(jk, bmi)
                     features_scaled = scaler_teen.transform(features)
                     prediction = model_teen.predict(features_scaled)[0]
                 
@@ -541,4 +570,3 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
-
