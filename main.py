@@ -123,8 +123,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-PATH_MODEL_ANAK = "model/model_child.h5"
-PATH_MODEL_REMAJA = "model/model_teen.h5"
+PATH_MODEL_ANAK = "model_child.h5"
+PATH_MODEL_REMAJA = "model_teen.h5"
 PATH_LMS_LK = "laki_laki.xlsx"
 PATH_LMS_PR = "perempuan.xlsx"
 
@@ -852,3 +852,4 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
+
