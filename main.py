@@ -268,7 +268,7 @@ with col1:
     
     st.markdown("""
     <div class="classification-card">
-        <h3>Klasifikasi Z-Score 5 Tahun ( 60 - 68 Bulan )</h3>
+        <h3>Klasifikasi BAZ 61 - 68 Bulan</h3>
         <table style="width:100%; border-collapse: collapse;">
             <tr style="background: rgba(255,255,255,0.2); color: white;">
                 <th style="border: 1px solid rgba(255,255,255,0.3); padding: 12px; text-align: left;">Klasifikasi</th>
@@ -304,15 +304,15 @@ with col1:
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Kurus</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">17 - < 18,5</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">< 18,5</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Normal</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 18,5 - < 25</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 18,5 sd < 25</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Berat Badan Lebih</td>
-                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 25,0 - < 27</td>
+                <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">≥ 25,0 sd < 27</td>
             </tr>
             <tr style="color: white;">
                 <td style="border: 1px solid rgba(255,255,255,0.3); padding: 10px;">Obesitas</td>
@@ -335,7 +335,7 @@ with col2:
         <br>
         <h4>Informasi Klasifikasi</h4>
         <ul>
-            <li><strong>Z-Score:</strong> Usia 5 Tahun ( 60-68 bulan )</li>
+            <li><strong>Z-Score:</strong> Usia 60 - 68 bulan</li>
             <li><strong>IMT:</strong> Usia 17 - 20 tahun</li>
             <li><strong>BAZ:</strong> BMI-for-Age Z-score</li>
             <li><strong>SD:</strong> Standard Deviasi</li>
@@ -368,18 +368,18 @@ if submit_button:
         if 204 <= age_months <= 251:
             with col5:
                 st.metric("IMT", f"{bmi}")
-        elif 60 <= age_months <= 68:
+        elif 61 <= age_months <= 68:
             st.metric("BAZ (BMI-for-Age Z-score)", f"{baz}")
 
         is_predict = False
 
-        if (60 <= age_months <= 68) or (204 <= age_months <= 251):
+        if (61 <= age_months <= 68) or (204 <= age_months <= 251):
             is_predict = True
 
         if is_predict and use_ai_prediction and (model_child or model_teen) is not None and (scaler_child or scaler_teen) is not None:
             try:
 
-                if 60 <= age_months <= 68:
+                if 61 <= age_months <= 68:
                     features = prepare_features_child(jk, tb, bb, age_months, baz)
                     features_scaled = scaler_child.transform(features)
                     prediction = model_child.predict(features_scaled)[0]
@@ -389,7 +389,7 @@ if submit_button:
                     prediction = model_teen.predict(features_scaled)[0]
                 
                 try:
-                    if 60 <= age_months <= 68:
+                    if 61 <= age_months <= 68:
                         prediction_proba = model_child.predict_proba(features_scaled)[0]
                     elif 204 <= age_months <= 251:
                         prediction_proba = model_teen.predict_proba(features_scaled)[0]
@@ -488,7 +488,7 @@ if submit_button:
             st.markdown("### Interpretasi IMT")
 
             if bmi < 18.5:
-                bmi_interpretation = "Kurus ( 17 - < 18,5 )"
+                bmi_interpretation = "Kurus ( < 18,5 )"
                 bmi_class = "underweight-status"
             elif 18.5 <= bmi < 25:
                 bmi_interpretation = "Normal ( ≥ 18,5 - < 25 )"
@@ -570,3 +570,4 @@ st.markdown("""
     <p><em>Hasil prediksi AI harus dikonfirmasi dengan tenaga kesehatan profesional</em></p>
 </div>
 """, unsafe_allow_html=True)
+
